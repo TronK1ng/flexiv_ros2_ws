@@ -1,0 +1,153 @@
+# Defaults for the grasp demo. Everything here can be overridden from the command
+# line or from another parameter file; the launch file only injects robot_sn.
+
+grasp_task:
+  ros__parameters:
+    robot_sn: ""
+    detect_mode: "vision"           # "vision" | "mock"
+
+    # Frames are derived from robot_sn when left empty:
+    #   planning group = <robot_sn>_arm, base = <robot_sn>_base_link, tcp = <robot_sn>_grav_tcp
+    planning_group: ""
+    base_frame: ""
+    tcp_frame: ""
+
+    # Observe pose: where the arm parks to take the picture. The camera sits 0.127 m
+    # above the TCP and looks 28.4 deg off the tool axis, so "0.3 m above the cube" is
+    # not where it points. This value was solved so the optical axis hits the cube at
+    # (0.468, 0.012, -0.016) from 0.30 m: see docs/m2_vision_check.md for the method.
+    # When the cube moves, re-solve it (or teach it with the pendant).
+    observe_pose_xyz: [0.5275, 0.0287, 0.1208]
+    observe_pose_rpy: [0.0, 3.14159, 0.1679]
+
+    # Where to put the cube down.
+    #   relative  : grasp point + place_offset_from_grasp (base frame), height from
+    #               place_pose_xyz below
+    #   fixed     : always the place_pose_xyz below
+    # +y is the robot's left when it faces +x (REP-103), so 0.10 moves the cube 10 cm
+    # to the left of where it was picked up. Flip the sign if that is not "left" here.
+    place_mode: "relative"
+    place_offset_from_grasp: [0.0, 0.10, 0.0]
+    # Release height: "grasp" keeps the TCP at the height it picked the cube from (the
+    # cube keeps its offset from the gripper, so this puts it back on the same surface).
+    # "configured" uses place_pose_xyz.z below.
+    place_height_mode: "grasp"
+    place_z_offset: 0.0
+
+    # Placement pose, read off the teach pendant (World frame, which equals
+    # <robot_sn>_base_link here) at the ORIGINAL fixed location. In relative mode only
+    # its z (cube centre height) is used. RPY is the pendant's Rx 0.00 / Ry 180.00 / Rz 9.62 deg.
+    #
+    # The pendant reading was taken with bare fingertips on the table, i.e. it is
+    # the table surface: z = -0.05021. The TCP has to stop 20 mm higher, at the
+    # centre of the 40 mm cube, so the cube lands on the table instead of sinking
+    # into it.
+    place_pose_xyz: [0.48882, -0.25160, -0.03021]
+    place_pose_rpy: [0.0, 3.14159, 0.1679]
+
+    # Table plane the cube stands on, used as a hard lower bound for the grasp pose.
+    # The detected height drifts by ~1 cm at this marker size, and without the guard a
+    # low reading would drive the fingertips into the table.
+    # Surface under the PICK point. Not the same as the taught place point: a contact
+    # probe put the table between -0.0202 and -0.0111, i.e. ~30 mm higher than the
+    # -0.0502 read at the old place pose. -0.015 is the middle of that bracket.
+    table_z: -0.05021
+    min_tcp_clearance: 0.020
+
+    # Grasp height source. The 26 mm marker gives a depth accurate to ~1-2 cm, which is
+    # enough to drive the fingers into the table. "table" derives the height from the
+    # known table plane and cube size instead, and keeps the marker only for x/y
+    # (accurate to a few mm). "marker" trusts the detected z.
+    grasp_height_mode: "table"
+    object_height: 0.040
+    # Raised from 0 because the real fingertips sat lower than the model predicted and
+    # grazed the table. Now the closing height is table + 20 + 10 = 30 mm, i.e. 10 mm
+    # below the cube top. Calibrate it once the true fingertip height is measured.
+    grasp_height_offset: 0.000
+    # Pause at the pre-grasp pose, gripper open, before the straight descent.
+    pre_grasp_dwell: 0.5
+
+    # Contact stop: the descent runs in steps and aborts as soon as the TCP force rises,
+    # so a wrong table height cannot drive the fingers into the surface. The abort
+    # reports the contact height, which is the number table_z should have been.
+    # "single" = one smooth straight descent (contact is checked right after the move).
+    # "stepped" = 2 mm steps with a stop on contact, precise but visibly stuttering.
+    descent_mode: "single"
+    contact_stop: false
+    contact_force_n: 3.0
+    # 2 mm steps: the contact bracket is then 2 mm wide and the worst-case penetration
+    # (and thus the force spike) is small. Once table_z is calibrated this can go back to
+    # 0.01 for speed.
+    descent_step: 0.002
+    contact_settle: 0.08
+    enable_table_guard: true
+
+    # Grasp geometry. Target object: 40 x 40 x 40 mm cube, 20 g, visible face tagged.
+    # grasp_offset is measured along the marker normal: negative values push the TCP
+    # into the object. -0.02 puts the TCP at the cube centre (height / 2 below the
+    # tagged top face), which is where the fingers straddle the cube.
+    approach_height: 0.10
+    grasp_offset: -0.02
+    grasp_yaw_offset: 0.0
+    lift_height: 0.10
+    place_release_height: 0.05
+
+    # Gripper. A 40 mm cube fits the 90 mm stroke; 70 mm opening is enough clearance
+    # and shortens the approach. 20 g needs well under 1 N of friction, 10 N gives a
+    # large safety margin without denting a hollow/soft cube. close_width is where
+    # the fingers end up when they close on nothing.
+    grasp_force: 10.0
+    # A grasp counts as successful if EITHER the fingers stopped wide enough OR the
+    # gripper reports contact force: a force-controlled grasp can squeeze a soft object
+    # to a narrow width without the width telling you anything.
+    min_grasp_width: 0.030
+    min_grasp_force: 3.0
+    open_width: 0.07
+    close_width: 0.01
+    gripper_velocity: 0.1
+    gripper_max_force: 20.0
+
+    # Safety. 0.1 is the value MoveIt's joint_limits.yaml already assumes.
+    velocity_scaling: 0.1
+    acceleration_scaling: 0.1
+    planning_time: 5.0
+    cartesian_step: 0.005
+    min_cartesian_fraction: 0.9
+    move_attempts: 2
+
+    # Behaviour.
+    settle_time: 0.5
+    detect_retries: 3
+    detect_samples: 3   # median over this many frames, kills single-frame outliers
+    client_timeout: 2.0
+
+    # Mock detection, used with detect_mode: "mock" so M0 can run without a camera.
+    # Top face of the 40 mm cube standing on the table at z = -0.05021.
+    mock_tag_xyz: [0.45, 0.0, -0.01021]
+    mock_tag_rpy: [0.0, 0.0, 0.0]
+    mock_tag_id: 7
+
+grasp_perception:
+  ros__parameters:
+    tag_family: "25h9"
+    tag_size: 0.026
+    base_frame: ""
+    target_ids: [0]                 # [0] means "no id filter"
+    image_topic: "/camera/camera/color/image_raw"
+    camera_info_topic: "/camera/camera/color/camera_info"
+    # The cube carries a marker on every face; an oblique view can make a side face
+    # larger than the top one, and a side face would silently turn a top grasp into a
+    # side grasp. Only markers whose normal points up (>= min_normal_z) are used.
+    selection: "up_facing"
+    min_normal_z: 0.7
+    tf_latest_fallback: true
+    max_age_s: 0.2
+    min_area_px: 150.0
+    max_reproj_error_px: 3.0
+    publish_debug: true
+
+flexiv_gripper_node:
+  ros__parameters:
+    open_width: 0.09
+    object_width: 0.040
+    default_velocity: 0.1

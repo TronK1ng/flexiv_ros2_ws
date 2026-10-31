@@ -1,0 +1,41 @@
+# Pick-and-place goal for the Flexiv grasp demo.
+#
+# Empty / zero fields fall back to the values in config/grasp_demo.yaml, so a
+# minimal goal such as `ros2 action send_goal ... "{}"` works.
+
+# Target marker id as a decimal string ("7"); empty means "largest visible tag".
+string object_id
+
+# Optional explicit grasp pose in the base frame. A zero position means
+# "use the pose reported by the perception node".
+geometry_msgs/PoseStamped grasp_pose
+
+# Optional placement pose. A zero position means "use the configured place pose".
+geometry_msgs/PoseStamped place_pose
+
+# Gripper force in N. 0 means "use the configured default".
+float64 grasp_force
+
+# Pre-grasp height above the grasp pose in m. 0 means "use the configured default".
+float64 approach_height
+---
+# Whether the whole sequence finished successfully.
+bool success
+
+# Error code and human readable detail; "ok" on success.
+string message
+
+# Grasp pose actually used, so a failed run can be replayed and inspected.
+geometry_msgs/PoseStamped grasp_pose_used
+
+# Gripper width measured after closing, in m.
+float64 measured_width
+---
+# Current stage: OBSERVE / DETECT / APPROACH / GRASP / LIFT / PLACE / RELEASE / RETREAT.
+string stage
+
+# 0.0 - 1.0 progress over the stage sequence.
+float64 progress
+
+# Extra detail, e.g. retry count or planning fraction.
+string detail

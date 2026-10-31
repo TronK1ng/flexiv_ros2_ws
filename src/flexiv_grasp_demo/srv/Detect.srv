@@ -1,0 +1,7 @@
+# Request the currently visible markers. Runs against the latest camera frame;
+# the task node calls this once the arm has settled at the observe pose.
+string object_id        # decimal tag id; empty means "all visible tags"
+---
+GraspTarget[] targets   # one entry per visible tag, sorted by descending area
+bool image_stale        # true when the newest frame is older than max_age_s
+string message

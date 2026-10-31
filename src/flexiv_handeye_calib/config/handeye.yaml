@@ -1,0 +1,66 @@
+# Defaults for flexiv_handeye_calib.  Empty frame / path strings are replaced by
+# values derived from robot_sn or by $HOME/.ros/flexiv_handeye/... in the node.
+
+handeye_calibrator:
+  ros__parameters:
+    robot_sn: ""
+    base_frame: ""                  # "" -> <robot_sn>_base_link
+    flange_frame: ""                # "" -> <robot_sn>_flange
+    camera_frame: "camera_link"     # child of the calibration, what the demo consumes
+    image_topic: "/camera/camera/color/image_raw"
+    camera_info_topic: "/camera/camera/color/camera_info"
+
+    target_type: "chessboard"         # apriltag | chessboard
+    tag_family: "25h9"
+    tag_size: 0.026                 # side of the black square, border included
+    tag_id: -1                      # -1 = largest tag in view
+
+    # chessboard (e.g. DFOPTIX Q12-100-6): count INNER corners, not squares
+    chessboard_cols: 8
+    chessboard_rows: 11
+    square_size: 0.006              # m
+    chessboard_auto: false           # scan common patterns when in doubt
+    normalize_symmetric_board: true # fix 90 deg branch flips of square boards
+    min_area_px: 150.0
+    max_reprojection_error_px: 3.0
+
+    samples_file: ""                # "" -> ~/.ros/flexiv_handeye/samples.json
+    output_yaml: ""                 # "" -> ~/.ros/flexiv_handeye/handeye_calibration.yaml
+
+    auto_capture: false
+    auto_min_translation: 0.02      # m, must move this much between samples
+    auto_min_rotation_deg: 6.0
+    auto_max_speed: 0.05            # m/s
+    auto_max_angular_speed_deg: 8.0 # deg/s - catches wrist roll, which is fast but linear-still
+    settle_time: 0.6                # s the arm must be still before a frame is taken
+    auto_cooldown_s: 1.5
+
+    min_samples: 6
+    solve_method: "PARK"            # PARK/TSAI/HORAUD/ANDREFF/DANIILIDIS/PARK_LS
+    reject_outliers: true
+    publish_tf: true                # set false when the demo publishes the same TF
+    dedupe_translation: 0.005
+    dedupe_rotation_deg: 2.0
+    max_image_age_s: 0.5
+    auto_save: true
+
+handeye_validator:
+  ros__parameters:
+    robot_sn: ""
+    base_frame: ""
+    camera_frame: "camera_link"
+    image_topic: "/camera/camera/color/image_raw"
+    camera_info_topic: "/camera/camera/color/camera_info"
+    target_type: "chessboard"
+    tag_family: "25h9"
+    tag_size: 0.026
+    tag_id: -1
+    chessboard_cols: 8
+    chessboard_rows: 11
+    square_size: 0.006
+    chessboard_auto: false
+    min_area_px: 150.0
+    max_reprojection_error_px: 3.0
+    max_image_age_s: 0.5
+    dedupe_translation: 0.01
+    report_file: ""
